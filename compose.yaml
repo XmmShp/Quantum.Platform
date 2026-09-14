@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      ConnectionStrings__postgres: Host=postgres;Port=5432;Database=quantum_platform;Username=postgres;Password=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      ConnectionStrings__postgres: Host=quantum-platform-postgres;Port=5432;Database=quantum_platform;Username=postgres;Password=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
       QuantumPlatform__Jwt__SigningKey: ${QUANTUM_PLATFORM_JWT_SIGNING_KEY:?set QUANTUM_PLATFORM_JWT_SIGNING_KEY}
       QuantumPlatform__Storage__BasePath: /app/Files
       QuantumPlatform__BootstrapAdmin__Username: ${QUANTUM_PLATFORM_BOOTSTRAP_ADMIN_USERNAME:-}
@@ -41,6 +41,10 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    networks:
+      default:
+        aliases:
+          - quantum-platform-postgres
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d quantum_platform"]
       interval: 5s
