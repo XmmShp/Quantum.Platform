@@ -28,7 +28,42 @@ public interface IPlatformEmailSender
         CancellationToken cancellationToken);
 }
 
+public interface IEmailVerificationCodeGenerator
+{
+    string Generate();
+}
+
+public interface IRegistrationLock
+{
+    Task<IAsyncDisposable> AcquireAsync(string resource, CancellationToken cancellationToken);
+}
+
 public sealed record IssuedAccessToken(string AccessToken, DateTime ExpiresAtUtc);
+
+public enum AutomatedPluginReviewDecision
+{
+    Approve,
+    Reject,
+    ManualReview
+}
+
+public sealed record AutomatedPluginReviewResult(
+    string TaskId,
+    AutomatedPluginReviewDecision Decision,
+    string Summary);
+
+public interface IPluginReleaseAutomatedReviewer
+{
+    Task<string> StartAsync(
+        PluginListing listing,
+        PluginRelease release,
+        byte[] packageArchive,
+        CancellationToken cancellationToken);
+
+    Task<AutomatedPluginReviewResult> WaitAsync(
+        string taskId,
+        CancellationToken cancellationToken);
+}
 
 public interface IPluginPackageStore
 {

@@ -28,6 +28,20 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
             entity.HasIndex(user => user.Email).IsUnique();
         });
 
+        modelBuilder.Entity<RegistrationEmailVerification>(entity =>
+        {
+            entity.ToTable(nameof(RegistrationEmailVerification));
+            entity.IsHostOnly();
+            entity.HasKey(verification => verification.Id);
+            entity.Property(verification => verification.Id).ValueGeneratedNever();
+            entity.Property(verification => verification.Email).HasMaxLength(320).IsRequired();
+            entity.Property(verification => verification.CodeHash).HasMaxLength(512).IsRequired();
+            entity.Property(verification => verification.RequestedAtUtc).HasColumnType("timestamp with time zone").IsRequired();
+            entity.Property(verification => verification.ExpiresAtUtc).HasColumnType("timestamp with time zone").IsRequired();
+            entity.HasIndex(verification => verification.Email).IsUnique();
+            entity.HasIndex(verification => verification.ExpiresAtUtc);
+        });
+
         modelBuilder.Entity<PluginListing>(entity =>
         {
             entity.ToTable(nameof(PluginListing));
@@ -61,8 +75,15 @@ public sealed class PlatformDbContext(DbContextOptions<PlatformDbContext> option
             entity.Property(release => release.UploadedAtUtc).HasColumnType("timestamp with time zone").IsRequired();
             entity.Property(release => release.ReviewedAtUtc).HasColumnType("timestamp with time zone");
             entity.Property(release => release.ReviewNotes).HasMaxLength(2000);
+            entity.Property(release => release.AutomatedReviewState).HasConversion<short>().IsRequired();
+            entity.Property(release => release.AutomatedReviewTaskId).HasMaxLength(200);
+            entity.Property(release => release.AutomatedReviewSummary).HasMaxLength(2000);
+            entity.Property(release => release.AutomatedReviewStartedAtUtc).HasColumnType("timestamp with time zone");
+            entity.Property(release => release.AutomatedReviewCompletedAtUtc).HasColumnType("timestamp with time zone");
+            entity.Property(release => release.ConcurrencyVersion).IsConcurrencyToken().IsRequired();
             entity.HasIndex(release => new { release.ListingId, release.Version }).IsUnique();
             entity.HasIndex(release => new { release.Status, release.UploadedAtUtc });
+            entity.HasIndex(release => new { release.AutomatedReviewState, release.UploadedAtUtc });
         });
 
         modelBuilder.Entity<AuditEntry>(entity =>

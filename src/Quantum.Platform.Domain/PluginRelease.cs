@@ -10,6 +10,16 @@ public enum PluginReleaseStatus
     Rejected
 }
 
+public enum AutomatedReviewStatus
+{
+    Queued = 1,
+    Running,
+    Approved,
+    Rejected,
+    ManualReview,
+    Failed
+}
+
 public sealed class PluginRelease
 {
     private static readonly Regex SemanticVersionPattern = new(
@@ -40,6 +50,8 @@ public sealed class PluginRelease
         PackageSizeBytes = packageSizeBytes > 0 ? packageSizeBytes : throw new ArgumentOutOfRangeException(nameof(packageSizeBytes));
         PackageSha256 = NormalizeSha256(packageSha256);
         Status = PluginReleaseStatus.Pending;
+        AutomatedReviewState = AutomatedReviewStatus.Queued;
+        ConcurrencyVersion = 1;
         UploadedAtUtc = uploadedAtUtc;
     }
 
@@ -57,6 +69,13 @@ public sealed class PluginRelease
     public PlatformUserId? ReviewedByUserId { get; private set; }
     public string? ReviewNotes { get; private set; }
     public long DownloadCount { get; private set; }
+    public AutomatedReviewStatus AutomatedReviewState { get; private set; }
+    public string? AutomatedReviewTaskId { get; private set; }
+    public string? AutomatedReviewSummary { get; private set; }
+    public int AutomatedReviewAttempts { get; private set; }
+    public DateTime? AutomatedReviewStartedAtUtc { get; private set; }
+    public DateTime? AutomatedReviewCompletedAtUtc { get; private set; }
+    public int ConcurrencyVersion { get; private set; }
 
     public static PluginRelease Create(
         PluginListingId listingId,
@@ -98,6 +117,14 @@ public sealed class PluginRelease
         {
             throw new ArgumentException("Review notes cannot exceed 2000 characters.", nameof(notes));
         }
+
+        if (AutomatedReviewState is AutomatedReviewStatus.Queued or AutomatedReviewStatus.Running or AutomatedReviewStatus.Failed)
+        {
+            AutomatedReviewState = AutomatedReviewStatus.ManualReview;
+            AutomatedReviewCompletedAtUtc = ReviewedAtUtc;
+        }
+
+        ConcurrencyVersion = checked(ConcurrencyVersion + 1);
     }
 
     public void RecordDownload()
@@ -108,6 +135,89 @@ public sealed class PluginRelease
         }
 
         DownloadCount = checked(DownloadCount + 1);
+    }
+
+    public void BeginAutomatedReview(TimeProvider? timeProvider = null)
+    {
+        if (Status != PluginReleaseStatus.Pending || AutomatedReviewState is AutomatedReviewStatus.Approved or AutomatedReviewStatus.Rejected)
+        {
+            throw new InvalidOperationException("Only an unresolved pending release can enter automated review.");
+        }
+
+        AutomatedReviewState = AutomatedReviewStatus.Running;
+        AutomatedReviewTaskId = null;
+        AutomatedReviewSummary = null;
+        AutomatedReviewAttempts = checked(AutomatedReviewAttempts + 1);
+        AutomatedReviewStartedAtUtc = timeProvider.OrDefault().GetUtcNow().UtcDateTime;
+        AutomatedReviewCompletedAtUtc = null;
+        ConcurrencyVersion = checked(ConcurrencyVersion + 1);
+    }
+
+    public void RecordAutomatedReviewTask(string taskId)
+    {
+        if (AutomatedReviewState != AutomatedReviewStatus.Running)
+        {
+            throw new InvalidOperationException("The release is not being reviewed automatically.");
+        }
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(taskId);
+        AutomatedReviewTaskId = taskId.Trim();
+        if (AutomatedReviewTaskId.Length > 200)
+        {
+            throw new ArgumentException("Automated review task ID cannot exceed 200 characters.", nameof(taskId));
+        }
+        ConcurrencyVersion = checked(ConcurrencyVersion + 1);
+    }
+
+    public void CompleteAutomatedReview(
+        AutomatedReviewStatus result,
+        string summary,
+        TimeProvider? timeProvider = null)
+    {
+        if (AutomatedReviewState != AutomatedReviewStatus.Running ||
+            result is not (AutomatedReviewStatus.Approved or AutomatedReviewStatus.Rejected or AutomatedReviewStatus.ManualReview))
+        {
+            throw new InvalidOperationException("The automated review transition is invalid.");
+        }
+
+        AutomatedReviewSummary = NormalizeAutomatedReviewSummary(summary);
+        AutomatedReviewState = result;
+        AutomatedReviewCompletedAtUtc = timeProvider.OrDefault().GetUtcNow().UtcDateTime;
+        if (result is AutomatedReviewStatus.Approved or AutomatedReviewStatus.Rejected)
+        {
+            Status = result == AutomatedReviewStatus.Approved
+                ? PluginReleaseStatus.Published
+                : PluginReleaseStatus.Rejected;
+            ReviewedAtUtc = AutomatedReviewCompletedAtUtc;
+            ReviewedByUserId = null;
+            ReviewNotes = AutomatedReviewSummary;
+        }
+        ConcurrencyVersion = checked(ConcurrencyVersion + 1);
+    }
+
+    public void FailAutomatedReview(string summary, TimeProvider? timeProvider = null)
+    {
+        if (Status != PluginReleaseStatus.Pending)
+        {
+            throw new InvalidOperationException("Only a pending release can fail automated review.");
+        }
+
+        AutomatedReviewState = AutomatedReviewStatus.Failed;
+        AutomatedReviewSummary = NormalizeAutomatedReviewSummary(summary);
+        AutomatedReviewCompletedAtUtc = timeProvider.OrDefault().GetUtcNow().UtcDateTime;
+        ConcurrencyVersion = checked(ConcurrencyVersion + 1);
+    }
+
+    private static string NormalizeAutomatedReviewSummary(string summary)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(summary);
+        var normalized = summary.Trim();
+        if (normalized.Length > 2000)
+        {
+            normalized = normalized[..2000];
+        }
+
+        return normalized;
     }
 
     public static string NormalizeVersion(string version)

@@ -9,17 +9,19 @@ using Quantum.Platform.Contract;
 using Quantum.Platform.UI.Components;
 
 var builder = NOFWebApplicationBuilder.Create(args);
+var emailConfigurationPath = builder.Configuration["QuantumPlatform:Email:ConfigurationPath"];
+if (!string.IsNullOrWhiteSpace(emailConfigurationPath))
+{
+    builder.Configuration.AddJsonFile(emailConfigurationPath, optional: false, reloadOnChange: false);
+}
 
 builder.AddApplicationPart(typeof(IQuantumPlatformService).Assembly);
 builder.AddApplicationPart(typeof(RegisterUser).Assembly);
 builder.AddRpcServer<QuantumPlatformService>();
 builder.Services.AddQuantumPlatformApplication();
-builder.Services.AddQuantumPlatformServices(builder.Configuration);
+builder.Services.AddQuantumPlatformServices(builder.Configuration, builder.Environment);
 builder.AddQuantumPlatformAuthentication();
 builder.AddQuantumPlatformPostgreSql();
-builder.Services.Configure<BootstrapAdminOptions>(
-    builder.Configuration.GetSection(BootstrapAdminOptions.SectionName));
-builder.Services.AddInitializationStep<BootstrapAdminInitializationStep>();
 builder.Services.AddHealthChecks();
 builder.Services.AddRazorComponents()
     .AddInteractiveWebAssemblyComponents();

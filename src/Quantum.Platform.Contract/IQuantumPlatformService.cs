@@ -6,6 +6,10 @@ namespace Quantum.Platform.Contract;
 [TransportOverHttp(HttpRpcStyle.JsonRpc, "/rpc")]
 public interface IQuantumPlatformService : IRpcService
 {
+    [Summary("Send an email verification code for registration")]
+    [Category("Users")]
+    Result RequestRegistrationEmailCode(RequestRegistrationEmailCodeRequest request);
+
     [Summary("Register a developer account")]
     [Category("Users")]
     Result<UserSummary> RegisterUser(RegisterUserRequest request);

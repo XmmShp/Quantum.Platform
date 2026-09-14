@@ -33,7 +33,13 @@ internal static class ContractMapping
             ReviewedAtUtc = release.ReviewedAtUtc,
             ReviewedByUserId = release.ReviewedByUserId is { } reviewer ? Format(reviewer) : null,
             ReviewNotes = release.ReviewNotes,
-            DownloadCount = release.DownloadCount
+            DownloadCount = release.DownloadCount,
+            AutomatedReviewStatus = (AutomatedReviewState)(int)release.AutomatedReviewState,
+            AutomatedReviewTaskId = release.AutomatedReviewTaskId,
+            AutomatedReviewSummary = release.AutomatedReviewSummary,
+            AutomatedReviewAttempts = release.AutomatedReviewAttempts,
+            AutomatedReviewStartedAtUtc = release.AutomatedReviewStartedAtUtc,
+            AutomatedReviewCompletedAtUtc = release.AutomatedReviewCompletedAtUtc
         };
 
     public static PluginSummary ToSummary(

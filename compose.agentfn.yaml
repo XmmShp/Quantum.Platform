@@ -1,0 +1,11 @@
+services:
+  platform:
+    environment:
+      QuantumPlatform__AutomatedReview__Enabled: "true"
+      QuantumPlatform__AutomatedReview__PrivateJwksPath: /run/secrets/agentfn-review-private-jwks
+    secrets:
+      - agentfn-review-private-jwks
+
+secrets:
+  agentfn-review-private-jwks:
+    file: ${QUANTUM_PLATFORM_AGENTFN_PRIVATE_JWKS_FILE:?set QUANTUM_PLATFORM_AGENTFN_PRIVATE_JWKS_FILE}

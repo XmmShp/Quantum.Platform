@@ -27,13 +27,20 @@ jobs:
         run: |
           set -euo pipefail
           test -r "$HOME/.config/quantum-platform/production.env"
+          test -r "$HOME/.config/quantum-platform/quantum-platform-email.json"
+          test -r "$HOME/.config/quantum-platform/quantum-platform-review.private.jwks.json"
           docker info >/dev/null
 
       - name: Deploy
         shell: bash
         run: |
           set -euo pipefail
+          export QUANTUM_PLATFORM_EMAIL_CONFIG_FILE="$HOME/.config/quantum-platform/quantum-platform-email.json"
+          export QUANTUM_PLATFORM_AGENTFN_PRIVATE_JWKS_FILE="$HOME/.config/quantum-platform/quantum-platform-review.private.jwks.json"
           docker compose --progress quiet \
+            -f compose.yaml \
+            -f compose.production.yaml \
+            -f compose.agentfn.yaml \
             --project-name quantum-platform \
             --env-file "$HOME/.config/quantum-platform/production.env" \
             up --detach --build --remove-orphans --quiet-pull

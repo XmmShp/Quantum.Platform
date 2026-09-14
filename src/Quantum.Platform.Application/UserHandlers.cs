@@ -7,13 +7,88 @@ using Quantum.Platform.Domain;
 
 namespace Quantum.Platform.Application.Handlers;
 
+public sealed class RequestRegistrationEmailCode(
+    IRepository<PlatformUser> users,
+    IRepository<RegistrationEmailVerification> verifications,
+    IPlatformPasswordHasher passwordHasher,
+    IEmailVerificationCodeGenerator codeGenerator,
+    IRegistrationLock registrationLock,
+    IPlatformEmailSender emailSender,
+    IIdGenerator idGenerator,
+    TimeProvider timeProvider,
+    IDbContext dbContext,
+    ILogger<RequestRegistrationEmailCode> logger) : QuantumPlatformService.RequestRegistrationEmailCode
+{
+    public override async Task<Result> HandleAsync(
+        RequestRegistrationEmailCodeRequest request,
+        Context context,
+        CancellationToken cancellationToken)
+    {
+        string email;
+        try
+        {
+            email = PlatformUser.NormalizeEmail(request.Email);
+        }
+        catch (ArgumentException exception)
+        {
+            return Result.Fail("invalid_email", exception.Message);
+        }
+
+        await using var emailLease = await registrationLock.AcquireAsync($"registration-email:{email}", cancellationToken);
+        if (await users.AsNoTracking().AnyAsync(candidate => candidate.Email == email, cancellationToken))
+        {
+            return Result.Fail("user_conflict", "The email address is already registered.");
+        }
+
+        var verification = await verifications
+            .Where(candidate => candidate.Email == email)
+            .SingleOrDefaultAsync(cancellationToken);
+        if (verification is not null && !verification.CanResend(timeProvider))
+        {
+            return Result.Fail("verification_throttled", "Wait one minute before requesting another verification code.");
+        }
+
+        var code = codeGenerator.Generate();
+        var codeHash = passwordHasher.Hash(code);
+        if (verification is null)
+        {
+            verification = RegistrationEmailVerification.Create(email, codeHash, idGenerator, timeProvider);
+            await verifications.AddAsync(verification, cancellationToken);
+        }
+        else
+        {
+            verification.ReplaceCode(codeHash, timeProvider);
+        }
+
+        try
+        {
+            await emailSender.SendAsync(
+                email,
+                "Quantum Platform registration code",
+                $"Your Quantum Platform registration code is {code}. It expires in 10 minutes.",
+                $"<p>Your Quantum Platform registration code is <strong>{code}</strong>.</p><p>It expires in 10 minutes.</p>",
+                cancellationToken);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            logger.LogWarning(exception, "Could not send a registration verification email.");
+            return Result.Fail("email_delivery_failed", "The verification email could not be delivered. Try again later.");
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return Result.Success();
+    }
+}
+
 public sealed class RegisterUser(
     IRepository<PlatformUser> users,
+    IRepository<RegistrationEmailVerification> verifications,
     IPlatformPasswordHasher passwordHasher,
     AuditWriter auditWriter,
     IIdGenerator idGenerator,
     TimeProvider timeProvider,
     IDbContext dbContext,
+    IRegistrationLock registrationLock,
     IPlatformEmailSender emailSender,
     ILogger<RegisterUser> logger) : QuantumPlatformService.RegisterUser
 {
@@ -31,6 +106,9 @@ public sealed class RegisterUser(
         {
             var username = PlatformUser.NormalizeUsername(request.Username);
             var email = PlatformUser.NormalizeEmail(request.Email);
+            var verificationCode = RegistrationEmailVerification.NormalizeCode(request.VerificationCode);
+            await using var emailLease = await registrationLock.AcquireAsync($"registration-email:{email}", cancellationToken);
+            await using var registrationLease = await registrationLock.AcquireAsync("registration-first-user", cancellationToken);
             var exists = await users.AsNoTracking().AnyAsync(
                 candidate => candidate.Username == username || candidate.Email == email,
                 cancellationToken);
@@ -39,17 +117,37 @@ public sealed class RegisterUser(
                 return Result.Fail("user_conflict", "The username or email address is already registered.");
             }
 
+            var verification = await verifications
+                .Where(candidate => candidate.Email == email)
+                .SingleOrDefaultAsync(cancellationToken);
+            if (verification is null || !verification.CanVerify(timeProvider))
+            {
+                return Result.Fail("verification_expired", "Request a new email verification code.");
+            }
+
+            if (!passwordHasher.Verify(verification.CodeHash, verificationCode))
+            {
+                verification.RecordFailedAttempt();
+                await dbContext.SaveChangesAsync(cancellationToken);
+                return Result.Fail("invalid_verification_code", "The email verification code is incorrect.");
+            }
+
+            var isFirstUser = !await users.AsNoTracking().AnyAsync(cancellationToken);
             var user = PlatformUser.Create(
                 username,
                 email,
                 passwordHasher.Hash(request.Password),
+                PlatformUser.RegistrationRoles(isFirstUser),
                 idGenerator: idGenerator,
                 timeProvider: timeProvider);
             await users.AddAsync(user, cancellationToken);
+            verifications.Remove(verification);
             await auditWriter.WriteAsync(
                 "user.registered",
                 user.Id,
-                $"User '{user.Username}' registered.",
+                isFirstUser
+                    ? $"Initial administrator '{user.Username}' registered."
+                    : $"User '{user.Username}' registered.",
                 null,
                 null,
                 cancellationToken);

@@ -34,6 +34,7 @@
           <div><p class="eyebrow">DEVELOPER ACCOUNT</p><h2 id="authTitle">登录开发者账号</h2></div>
           <label id="usernameField" hidden><span>开发者名称</span><input id="usernameInput" maxlength="64" autocomplete="username"></label>
           <label><span>邮箱</span><input id="emailInput" type="email" maxlength="320" autocomplete="email" required></label>
+          <label id="verificationField" hidden><span>邮箱验证码</span><div style="display:grid;gap:8px;grid-template-columns:minmax(0,1fr) auto"><input id="verificationInput" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code"><button id="sendVerificationButton" class="button secondary" type="button">发送验证码</button></div></label>
           <label><span>密码</span><input id="passwordInput" type="password" minlength="12" maxlength="1024" autocomplete="current-password" required></label>
           <p id="passwordHint" class="hint" hidden>密码至少 12 个字符。</p>
           <button id="authSubmit" class="button primary wide" type="submit">登录</button>

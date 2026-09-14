@@ -72,6 +72,11 @@ public sealed class PlatformUser
 
     public bool HasAnyRole(PlatformUserRole roles) => (Roles & roles) != 0;
 
+    public static PlatformUserRole RegistrationRoles(bool isFirstUser)
+        => isFirstUser
+            ? PlatformUserRole.User | PlatformUserRole.Developer | PlatformUserRole.Reviewer | PlatformUserRole.Admin
+            : PlatformUserRole.User | PlatformUserRole.Developer;
+
     public static string NormalizeUsername(string username)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(username);

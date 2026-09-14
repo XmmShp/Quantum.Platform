@@ -1,0 +1,11 @@
+services:
+  platform:
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      QuantumPlatform__Email__ConfigurationPath: /run/secrets/quantum-platform-email
+    secrets:
+      - quantum-platform-email
+
+secrets:
+  quantum-platform-email:
+    file: ${QUANTUM_PLATFORM_EMAIL_CONFIG_FILE:?set QUANTUM_PLATFORM_EMAIL_CONFIG_FILE}

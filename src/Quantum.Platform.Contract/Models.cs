@@ -17,6 +17,16 @@ public enum PluginReleaseState
     Rejected
 }
 
+public enum AutomatedReviewState
+{
+    Queued = 1,
+    Running,
+    Approved,
+    Rejected,
+    ManualReview,
+    Failed
+}
+
 public sealed record UserSummary
 {
     public required string UserId { get; init; }
@@ -70,6 +80,12 @@ public sealed record PluginReleaseSummary
     public string? ReviewedByUserId { get; init; }
     public string? ReviewNotes { get; init; }
     public required long DownloadCount { get; init; }
+    public required AutomatedReviewState AutomatedReviewStatus { get; init; }
+    public string? AutomatedReviewTaskId { get; init; }
+    public string? AutomatedReviewSummary { get; init; }
+    public required int AutomatedReviewAttempts { get; init; }
+    public DateTime? AutomatedReviewStartedAtUtc { get; init; }
+    public DateTime? AutomatedReviewCompletedAtUtc { get; init; }
 }
 
 public sealed record DownloadPluginReleaseResponse

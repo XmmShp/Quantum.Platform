@@ -2,6 +2,8 @@ using System.IO.Compression;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Quantum.Platform.Application;
+using Quantum.Platform.Domain;
+using NOF.Domain;
 
 namespace Quantum.Platform.Tests;
 
@@ -22,6 +24,35 @@ public sealed class HostServicesTests : IDisposable
         Assert.DoesNotContain("correct horse", hash, StringComparison.Ordinal);
         Assert.True(hasher.Verify(hash, "correct horse battery staple"));
         Assert.False(hasher.Verify(hash, "incorrect password"));
+    }
+
+    [Fact]
+    public async Task DevelopmentReviewer_ApprovesWithoutCallingAgentFn()
+    {
+        var idGenerator = new SnowflakeIdGenerator();
+        var listing = PluginListing.Create(
+            "quantum.plugin.local",
+            "Local plugin",
+            "Development package",
+            PlatformUserId.Of(1),
+            [],
+            idGenerator);
+        var release = PluginRelease.Create(
+            listing.Id,
+            "1.0.0",
+            ">=0.1.0",
+            string.Empty,
+            "package.zip",
+            128,
+            new string('a', 64),
+            idGenerator);
+        var reviewer = new DevelopmentAutoApprovePluginReleaseReviewer();
+
+        var taskId = await reviewer.StartAsync(listing, release, [1, 2, 3], CancellationToken.None);
+        var result = await reviewer.WaitAsync(taskId, CancellationToken.None);
+
+        Assert.Equal(AutomatedPluginReviewDecision.Approve, result.Decision);
+        Assert.StartsWith("development-auto-approve-", result.TaskId, StringComparison.Ordinal);
     }
 
     [Fact]

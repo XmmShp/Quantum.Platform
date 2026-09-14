@@ -17,10 +17,11 @@ tests/
 
 ## 能力
 
-- 用户注册、邮箱密码登录、个人资料、角色与管理员删除流程。
-- SMTP 启用后通过 MailKit 发送注册欢迎和版本审核结果邮件。
+- 邮箱验证码注册、邮箱密码登录、个人资料、角色与管理员删除流程；首位完成邮箱验证的注册用户自动成为系统管理员。
+- 开发环境通过日志输出验证码邮件，非开发环境强制使用 SMTP，通过 MailKit 发送验证码、欢迎和版本审核结果邮件。
 - 插件目录创建、更新、检索与按作者/标签过滤。
 - 插件 ZIP 上传、SHA-256 校验、审核、下载计数，并为当前 Quantum 选择最高兼容版本。
+- AgentFn 对待审核包执行受限、不可执行代码的自动安全审核；明确通过后自动发布，拒绝或不确定时保守拒绝/转人工。
 - 开发者可在客户端认证下载自己的待审核版本进行测试；该测试下载不计入公开下载量。
 - 同源网页工作台提供账号注册、插件资料、版本上传和 Reviewer/Admin 审核流程。
 - 管理员审计查询与可配置的安全管理员引导。
@@ -37,15 +38,9 @@ export QuantumPlatform__Jwt__SigningKey='replace-with-a-random-secret-of-at-leas
 dotnet run --project src/Quantum.Platform/Quantum.Platform.csproj
 ```
 
-可选的首次管理员只在配置了密码且对应邮箱不存在时创建：
-
-```bash
-export QuantumPlatform__BootstrapAdmin__Username='admin'
-export QuantumPlatform__BootstrapAdmin__Email='admin@example.com'
-export QuantumPlatform__BootstrapAdmin__Password='replace-with-a-strong-bootstrap-password'
-```
-
-创建后应移除这三个引导变量。仓库不包含默认管理员、调试 Token 接口或签名密钥。
+仓库不包含默认管理员、调试 Token 接口或签名密钥。空数据库中的首位注册用户必须完成邮箱验证，并自动获得
+User、Developer、Reviewer、Admin 角色。验证码只保存 PBKDF2 哈希，10 分钟有效，60 秒内不可重发，连续
+失败 5 次后必须重新申请。
 
 主要配置：
 
@@ -56,6 +51,10 @@ export QuantumPlatform__BootstrapAdmin__Password='replace-with-a-strong-bootstra
 | `QuantumPlatform:Storage:BasePath` | `QuantumPlatform__Storage__BasePath` | ZIP 存储根目录，默认 `Files` |
 | `QuantumPlatform:Storage:MaxArchiveBytes` | `QuantumPlatform__Storage__MaxArchiveBytes` | 压缩包大小上限 |
 | `QuantumPlatform:Storage:MaxExpandedBytes` | `QuantumPlatform__Storage__MaxExpandedBytes` | 解压后声明大小上限 |
+| `QuantumPlatform:AutomatedReview:Enabled` | `QUANTUM_PLATFORM_AUTOMATED_REVIEW_ENABLED` | 是否启用 AgentFn 自动审核发布 Worker |
+| `QuantumPlatform:AutomatedReview:PrivateJwksPath` | `QuantumPlatform__AutomatedReview__PrivateJwksPath` | 容器内私有 JWKS 路径；Compose 通过 `QUANTUM_PLATFORM_AGENTFN_PRIVATE_JWKS_FILE` 挂载 |
+| `QuantumPlatform:AutomatedReview:Model` | `QUANTUM_PLATFORM_AGENTFN_MODEL` | 自动审核使用的 AgentFn 模型引用 |
+| `QuantumPlatform:Email:ConfigurationPath` | `QuantumPlatform__Email__ConfigurationPath` | 包含 `QuantumPlatform:Email` 的只读 JSON Secret 路径 |
 | `QuantumPlatform:Email:Enabled` | `QuantumPlatform__Email__Enabled` | 是否启用平台邮件 |
 | `QuantumPlatform:Email:SmtpHost` | `QuantumPlatform__Email__SmtpHost` | SMTP 主机 |
 | `QuantumPlatform:Email:SmtpPort` | `QuantumPlatform__Email__SmtpPort` | SMTP 端口，默认 587 |
@@ -64,7 +63,10 @@ export QuantumPlatform__BootstrapAdmin__Password='replace-with-a-strong-bootstra
 | `QuantumPlatform:Email:Password` | `QuantumPlatform__Email__Password` | SMTP 密码，不应写入配置文件 |
 | `QuantumPlatform:Email:FromAddress` | `QuantumPlatform__Email__FromAddress` | 发件邮箱，启用邮件时必填 |
 
-邮件默认关闭，未配置 SMTP 不影响开发环境启动。启用后，注册和审核业务已经提交成功时，邮件发送失败只记录警告，不回滚业务事务。
+Development 环境始终使用 `DevelopmentLoggingPlatformEmailSender`，验证码会写入应用日志且不连接 SMTP；插件
+审核由 Development-only Reviewer 直接通过，不创建 AgentFn Task，也不会向外发送插件内容。
+非开发环境必须启用并正确配置 SMTP，否则应用拒绝启动。验证码邮件发送失败时不会保存该验证码；欢迎和审核
+通知发送失败只记录警告，不回滚已经提交的业务事务。
 
 浏览器打开服务根地址会进入产品发布页，页面首屏使用 Blazor 静态服务端渲染，其中发布链路演示由 Blazor WebAssembly 提供交互；开发者发布与审核工作台位于 `/portal/`。服务状态位于 `GET /api/status`，健康检查位于 `GET /health/live`。数据库迁移由 NOF 初始化步骤在服务启动时执行。
 
@@ -78,15 +80,16 @@ Content-Type: application/json; charset=utf-8
 
 {
   "jsonrpc": "2.0",
-  "id": "register-1",
-  "method": "RegisterUser",
+  "id": "registration-code-1",
+  "method": "RequestRegistrationEmailCode",
   "params": {
-    "username": "developer",
-    "email": "developer@example.com",
-    "password": "a-strong-development-password"
+    "email": "developer@example.com"
   }
 }
 ```
+
+收到验证码后调用 `RegisterUser`，同时提交 `username`、`email`、`password` 和六位
+`verificationCode`。Development 环境从应用日志读取验证码。
 
 登录后在受保护操作中携带 `Authorization: Bearer {accessToken}`。完整样例见 [Quantum.Platform.http](Quantum.Platform.http)。成功响应的 `result` 是 NOF Result envelope；调用方仍需检查 `result.isSuccess`。
 
@@ -103,6 +106,32 @@ docker build -t quantum-platform .
 ```bash
 docker compose up --build
 ```
+
+该命令默认使用 Development 环境、日志邮件发送器和本地自动通过审核器。生产环境还需加载邮件与 AgentFn Secret：
+
+```bash
+docker compose -f compose.yaml -f compose.production.yaml -f compose.agentfn.yaml up --build
+```
+
+### AgentFn 自动审核
+
+仓库中的 [`skills/quantum-plugin-release-review`](skills/quantum-plugin-release-review/SKILL.md) 已发布为私有
+Skill `quantum-plugin-release-review@1.0.1`。机器身份固定为 Credential Client
+`quantum-platform-review`，仅授予创建审核任务和读取结果所需的 `skill:run`、`task:read`，且只允许调用该 Skill；应用使用
+`private_key_jwt`，不保存用户 Access Token。
+
+启用前需要在 AgentFn 为该 Credential Client 配置模型供应商 Token。然后将其私有 JWKS 作为只读 Secret
+挂载；不要把 Token、JWKS 内容或命令输出写入仓库或 Actions 日志。Compose 可使用独立覆盖文件：
+
+```bash
+export QUANTUM_PLATFORM_AGENTFN_PRIVATE_JWKS_FILE='/secure/path/quantum-platform-review.private.jwks.json'
+docker compose -f compose.yaml -f compose.agentfn.yaml up --build
+```
+
+Production Worker 会为每个待审核版本创建带幂等键的 AgentFn Task。发送给模型的是发布元数据、完整文件清单和受大小
+约束的可审查文本文件，不执行包内脚本或二进制。`approve` 自动发布，`reject` 拒绝发布，
+`manual_review` 保持 Pending 等待人工；失败最多重试三次。人工审核与机器结果通过并发版本字段互斥，过期的
+机器结果不会覆盖人工决定。自动审核默认关闭，凭据和供应商 Token 就绪后再启用。
 
 ## 验证
 
@@ -126,9 +155,13 @@ bash scripts/install-production-runner.sh
 unset RUNNER_TOKEN
 ```
 
-部署密钥不存入仓库或 GitHub Actions。目标机必须存在权限为 `600` 的
-`~/.config/quantum-platform/production.env`，至少包含 `POSTGRES_PASSWORD` 和
-`QUANTUM_PLATFORM_JWT_SIGNING_KEY`。`POSTGRES_PASSWORD` 对应既有 `koala-pp-postgresql`
+部署密钥不存入仓库或 GitHub Actions。目标机必须存在以下权限为 `600` 的文件：
+
+- `~/.config/quantum-platform/production.env`：仅包含 `POSTGRES_PASSWORD` 和 `QUANTUM_PLATFORM_JWT_SIGNING_KEY`。
+- `~/.config/quantum-platform/quantum-platform-email.json`：从 notification-service 邮件配置派生的 JSON Secret。
+- `~/.config/quantum-platform/quantum-platform-review.private.jwks.json`：AgentFn Credential Client 私有 JWKS。
+
+`POSTGRES_PASSWORD` 对应既有 `koala-pp-postgresql`
 实例中的独立 `quantum_platform` 用户和同名数据库。Compose 仅把宿主健康检查端口绑定到
 `127.0.0.1:5080`，应用同时接入 `agentfn-overlay-net` 和 `koala-pp-overlay-net`。公网流量通过
 SakuraFRP 的 HTTPS 隧道以 PROXY protocol v2 转发至 Nginx，再由 Nginx 路由到

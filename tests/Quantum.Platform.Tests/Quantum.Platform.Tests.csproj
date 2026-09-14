@@ -16,6 +16,8 @@
              Link="Host\Email\MailKitPlatformEmailSender.cs" />
     <Compile Include="..\..\src\Quantum.Platform\Email\PlatformEmailOptions.cs"
              Link="Host\Email\PlatformEmailOptions.cs" />
+    <Compile Include="..\..\src\Quantum.Platform\Services\DevelopmentAutoApprovePluginReleaseReviewer.cs"
+             Link="Host\Services\DevelopmentAutoApprovePluginReleaseReviewer.cs" />
     <Compile Include="..\..\src\Quantum.Platform\Services\Pbkdf2PlatformPasswordHasher.cs"
              Link="Host\Services\Pbkdf2PlatformPasswordHasher.cs" />
     <Compile Include="..\..\src\Quantum.Platform\Services\PhysicalPluginPackageStore.cs"

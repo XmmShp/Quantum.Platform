@@ -61,10 +61,21 @@
     $("registerTab").setAttribute("aria-selected", String(registering));
     $("usernameField").hidden = !registering;
     $("usernameInput").required = registering;
+    $("verificationField").hidden = !registering;
+    $("verificationInput").required = registering;
     $("passwordHint").hidden = !registering;
     $("passwordInput").autocomplete = registering ? "new-password" : "current-password";
     $("authTitle").textContent = registering ? "注册开发者账号" : "登录开发者账号";
     $("authSubmit").textContent = registering ? "注册并登录" : "登录";
+  }
+
+  async function sendRegistrationCode() {
+    await run(async () => {
+      const email = $("emailInput").value.trim();
+      if (!email) throw new Error("请先填写邮箱。");
+      await rpc("RequestRegistrationEmailCode", { email });
+      notify("验证码已发送，有效期 10 分钟。");
+    });
   }
 
   function showWorkspace() {
@@ -88,7 +99,12 @@
       const email = $("emailInput").value.trim();
       const password = $("passwordInput").value;
       if (state.authMode === "register") {
-        await rpc("RegisterUser", { username: $("usernameInput").value.trim(), email, password });
+        await rpc("RegisterUser", {
+          username: $("usernameInput").value.trim(),
+          email,
+          password,
+          verificationCode: $("verificationInput").value.trim()
+        });
       }
       const login = await rpc("Login", { email, password });
       state.token = login.accessToken;
@@ -297,6 +313,7 @@
     $("loginTab").addEventListener("click", () => setAuthMode("login"));
     $("registerTab").addEventListener("click", () => setAuthMode("register"));
     $("authForm").addEventListener("submit", authenticate);
+    $("sendVerificationButton").addEventListener("click", sendRegistrationCode);
     $("logoutButton").addEventListener("click", logout);
     $("newPluginButton").addEventListener("click", () => beginPlugin());
     $("refreshPluginsButton").addEventListener("click", () => run(loadPlugins));

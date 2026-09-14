@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Quantum.Platform.Persistence;
@@ -11,9 +12,11 @@ using Quantum.Platform.Persistence;
 namespace Quantum.Platform.Persistence.Migrations
 {
     [DbContext(typeof(PlatformDbContext))]
-    partial class PlatformDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260914091208_AddAutomatedPluginReleaseReview")]
+    partial class AddAutomatedPluginReleaseReview
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -562,51 +565,6 @@ namespace Quantum.Platform.Persistence.Migrations
                         .IsUnique();
 
                     b.ToTable("PluginRelease", (string)null);
-
-                    b.HasAnnotation("NOF:HostOnly", true);
-                });
-
-            modelBuilder.Entity("Quantum.Platform.Domain.RegistrationEmailVerification", b =>
-                {
-                    b.Property<long>("Id")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("CodeHash")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)");
-
-                    b.Property<DateTime>("ExpiresAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("FailedAttempts")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("RequestedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<long>("__DeletedAtUnixTime")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasDefaultValue(0L);
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Email");
-
-                    b.HasIndex("ExpiresAtUtc");
-
-                    b.HasIndex("__DeletedAtUnixTime");
-
-                    b.HasIndex("Email", "__DeletedAtUnixTime")
-                        .IsUnique();
-
-                    b.ToTable("RegistrationEmailVerification", (string)null);
 
                     b.HasAnnotation("NOF:HostOnly", true);
                 });
