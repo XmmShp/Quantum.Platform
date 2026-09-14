@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+**/TestResults/
+**/Files/
+.git/
+.github/
+.vs/
+.vscode/
+artifacts/
+*.user
+*.log
+*.tmp

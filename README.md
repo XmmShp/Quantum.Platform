@@ -33,7 +33,7 @@ tests/
 ```bash
 export ConnectionStrings__postgres='Host=localhost;Port=5432;Database=quantum_platform;Username=postgres;Password=change-me'
 export QuantumPlatform__Jwt__SigningKey='replace-with-a-random-secret-of-at-least-32-characters'
-dotnet run --project quantum-platform/src/Quantum.Platform/Quantum.Platform.csproj
+dotnet run --project src/Quantum.Platform/Quantum.Platform.csproj
 ```
 
 可选的首次管理员只在配置了密码且对应邮箱不存在时创建：
@@ -94,20 +94,20 @@ Content-Type: application/json; charset=utf-8
 从仓库根目录构建：
 
 ```bash
-docker build -f quantum-platform/Dockerfile -t quantum-platform .
+docker build -t quantum-platform .
 ```
 
 也可以在本目录准备 `POSTGRES_PASSWORD` 和 `QUANTUM_PLATFORM_JWT_SIGNING_KEY` 后运行：
 
 ```bash
-docker compose -f quantum-platform/compose.yaml up --build
+docker compose up --build
 ```
 
 ## 验证
 
 ```bash
-dotnet build quantum-platform/src/Quantum.Platform/Quantum.Platform.csproj
-dotnet test quantum-platform/tests/Quantum.Platform.Tests/Quantum.Platform.Tests.csproj
+dotnet build Quantum.Platform.slnx
+dotnet test tests/Quantum.Platform.Tests/Quantum.Platform.Tests.csproj
 ```
 
 ## 许可证

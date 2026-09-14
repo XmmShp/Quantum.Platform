@@ -1,8 +1,8 @@
 services:
   platform:
     build:
-      context: ..
-      dockerfile: quantum-platform/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     environment:
       ConnectionStrings__postgres: Host=postgres;Port=5432;Database=quantum_platform;Username=postgres;Password=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
       QuantumPlatform__Jwt__SigningKey: ${QUANTUM_PLATFORM_JWT_SIGNING_KEY:?set QUANTUM_PLATFORM_JWT_SIGNING_KEY}
