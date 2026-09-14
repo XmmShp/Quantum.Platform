@@ -13,34 +13,30 @@ concurrency:
 
 jobs:
   deploy:
-    name: Deploy to 192.168.50.202
+    name: Deploy
     runs-on: [self-hosted, Linux, X64, quantum-platform-prod]
     environment:
       name: production
-      url: https://quantum.io-vii.com
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify deployment host
+      - name: Preflight
         shell: bash
         run: |
           set -euo pipefail
-          test "$(hostname)" = "koala2"
           test -r "$HOME/.config/quantum-platform/production.env"
           docker info >/dev/null
-          docker network inspect agentfn-overlay-net >/dev/null
-          docker network inspect koala-pp-overlay-net >/dev/null
 
-      - name: Build and deploy
+      - name: Deploy
         shell: bash
         run: |
           set -euo pipefail
-          docker compose \
+          docker compose --progress quiet \
             --project-name quantum-platform \
             --env-file "$HOME/.config/quantum-platform/production.env" \
-            up --detach --build --remove-orphans
+            up --detach --build --remove-orphans --quiet-pull
 
       - name: Verify health
         shell: bash
@@ -52,8 +48,5 @@ jobs:
             fi
             sleep 2
           done
-          docker compose \
-            --project-name quantum-platform \
-            --env-file "$HOME/.config/quantum-platform/production.env" \
-            logs --tail=200
+          echo "Deployment health check failed." >&2
           exit 1

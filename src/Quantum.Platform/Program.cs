@@ -6,6 +6,7 @@ using Quantum.Platform.Application;
 using Quantum.Platform.Application.Handlers;
 using Quantum.Platform.Authentication;
 using Quantum.Platform.Contract;
+using Quantum.Platform.Components;
 
 var builder = NOFWebApplicationBuilder.Create(args);
 
@@ -20,6 +21,8 @@ builder.Services.Configure<BootstrapAdminOptions>(
     builder.Configuration.GetSection(BootstrapAdminOptions.SectionName));
 builder.Services.AddInitializationStep<BootstrapAdminInitializationStep>();
 builder.Services.AddHealthChecks();
+builder.Services.AddRazorComponents()
+    .AddInteractiveWebAssemblyComponents();
 
 var app = await builder.BuildAsync();
 
@@ -28,7 +31,10 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapGet("/", () => Results.Redirect("/portal/"));
+app.UseAntiforgery();
+app.MapRazorComponents<App>()
+    .AddInteractiveWebAssemblyRenderMode()
+    .AddAdditionalAssemblies(typeof(Quantum.Platform.Client._Imports).Assembly);
 app.MapGet("/api/status", () => Results.Ok(new
 {
     service = "Quantum Platform",

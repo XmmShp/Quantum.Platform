@@ -13,12 +13,16 @@ env:
 
 jobs:
   build-test:
+    name: Verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-      - run: dotnet restore Quantum.Platform.slnx
-      - run: dotnet build Quantum.Platform.slnx -c ${{ env.CONFIGURATION }} --no-restore
-      - run: dotnet test tests/Quantum.Platform.Tests/Quantum.Platform.Tests.csproj -c ${{ env.CONFIGURATION }} --no-build
+      - name: Restore
+        run: dotnet restore Quantum.Platform.slnx --verbosity quiet
+      - name: Build
+        run: dotnet build Quantum.Platform.slnx -c ${{ env.CONFIGURATION }} --no-restore --verbosity quiet
+      - name: Test
+        run: dotnet test tests/Quantum.Platform.Tests/Quantum.Platform.Tests.csproj -c ${{ env.CONFIGURATION }} --no-build --verbosity quiet --no-ansi

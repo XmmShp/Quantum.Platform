@@ -65,7 +65,7 @@ export QuantumPlatform__BootstrapAdmin__Password='replace-with-a-strong-bootstra
 
 邮件默认关闭，未配置 SMTP 不影响开发环境启动。启用后，注册和审核业务已经提交成功时，邮件发送失败只记录警告，不回滚业务事务。
 
-浏览器打开服务根地址会进入网页工作台；服务状态位于 `GET /api/status`，健康检查位于 `GET /health/live`。数据库迁移由 NOF 初始化步骤在服务启动时执行。
+浏览器打开服务根地址会进入产品发布页，页面首屏使用 Blazor 静态服务端渲染，其中发布链路演示由 Blazor WebAssembly 提供交互；开发者发布与审核工作台位于 `/portal/`。服务状态位于 `GET /api/status`，健康检查位于 `GET /health/live`。数据库迁移由 NOF 初始化步骤在服务启动时执行。
 
 ## JSON-RPC
 

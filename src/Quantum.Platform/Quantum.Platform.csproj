@@ -7,12 +7,14 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Quantum.Platform.Application\Quantum.Platform.Application.csproj" />
+    <ProjectReference Include="..\Quantum.Platform.Client\Quantum.Platform.Client.csproj" />
     <ProjectReference Include="..\Quantum.Platform.Contract\Quantum.Platform.Contract.csproj" />
     <ProjectReference Include="..\Quantum.Platform.Domain\Quantum.Platform.Domain.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MailKit" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
