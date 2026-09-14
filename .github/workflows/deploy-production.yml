@@ -1,4 +1,4 @@
-name: Deploy production
+name: Release
 
 on:
   push:
@@ -12,48 +12,66 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    env:
+      DOTNET_VERSION: "10.0.x"
+      CONFIGURATION: Release
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet restore Quantum.Platform.slnx --verbosity quiet
+      - run: dotnet build Quantum.Platform.slnx -c ${{ env.CONFIGURATION }} --no-restore --verbosity quiet
+      - run: dotnet test tests/Quantum.Platform.Tests/Quantum.Platform.Tests.csproj -c ${{ env.CONFIGURATION }} --no-build --verbosity quiet
+
+  publish:
+    name: Publish
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/xmmshp/quantum-platform:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
   deploy:
     name: Deploy
+    needs: publish
     runs-on: [self-hosted, Linux, X64, quantum-platform-prod]
+    permissions:
+      contents: read
+      packages: read
     environment:
       name: production
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Preflight
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -r "$HOME/.config/quantum-platform/production.env"
-          test -r "$HOME/.config/quantum-platform/quantum-platform-email.json"
-          test -r "$HOME/.config/quantum-platform/quantum-platform-review.private.jwks.json"
-          docker info >/dev/null
-
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - name: Deploy
-        shell: bash
-        run: |
-          set -euo pipefail
-          export QUANTUM_PLATFORM_EMAIL_CONFIG_FILE="$HOME/.config/quantum-platform/quantum-platform-email.json"
-          export QUANTUM_PLATFORM_AGENTFN_PRIVATE_JWKS_FILE="$HOME/.config/quantum-platform/quantum-platform-review.private.jwks.json"
-          docker compose --progress quiet \
-            -f compose.yaml \
-            -f compose.production.yaml \
-            -f compose.agentfn.yaml \
-            --project-name quantum-platform \
-            --env-file "$HOME/.config/quantum-platform/production.env" \
-            up --detach --build --remove-orphans --quiet-pull
-
-      - name: Verify health
-        shell: bash
-        run: |
-          set -euo pipefail
-          for attempt in $(seq 1 30); do
-            if curl --fail --silent --show-error http://127.0.0.1:5080/health/live >/dev/null; then
-              exit 0
-            fi
-            sleep 2
-          done
-          echo "Deployment health check failed." >&2
-          exit 1
+        env:
+          QUANTUM_PLATFORM_IMAGE: ghcr.io/xmmshp/quantum-platform:${{ github.sha }}
+          QUANTUM_PLATFORM_DEPLOYMENT_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: bash scripts/deploy-production.sh
+      - name: Verify
+        run: bash scripts/verify-production.sh

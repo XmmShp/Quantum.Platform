@@ -4,6 +4,8 @@
 **/Files/
 .git/
 .github/
+.env
+.env.*
 .vs/
 .vscode/
 artifacts/
