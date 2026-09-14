@@ -127,9 +127,11 @@ unset RUNNER_TOKEN
 
 部署密钥不存入仓库或 GitHub Actions。目标机必须存在权限为 `600` 的
 `~/.config/quantum-platform/production.env`，至少包含 `POSTGRES_PASSWORD` 和
-`QUANTUM_PLATFORM_JWT_SIGNING_KEY`。Compose 仅把宿主健康检查端口绑定到
-`127.0.0.1:5080`，并把应用接入既有的 `agentfn-overlay-net`；SakuraFRP HTTPS 隧道应转发到
-该网络中的 `quantum-platform:8080`。
+`QUANTUM_PLATFORM_JWT_SIGNING_KEY`。`POSTGRES_PASSWORD` 对应既有 `koala-pp-postgresql`
+实例中的独立 `quantum_platform` 用户和同名数据库。Compose 仅把宿主健康检查端口绑定到
+`127.0.0.1:5080`，应用同时接入 `agentfn-overlay-net` 和 `koala-pp-overlay-net`。公网流量通过
+SakuraFRP 的 HTTPS 隧道以 PROXY protocol v2 转发至 Nginx，再由 Nginx 路由到
+`quantum-platform:8080`。
 
 ## 许可证
 

@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
-      ConnectionStrings__postgres: Host=quantum-platform-postgres;Port=5432;Database=quantum_platform;Username=postgres;Password=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      ConnectionStrings__postgres: Host=koala-pp-postgresql;Port=5432;Database=quantum_platform;Username=quantum_platform;Password=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
       QuantumPlatform__Jwt__SigningKey: ${QUANTUM_PLATFORM_JWT_SIGNING_KEY:?set QUANTUM_PLATFORM_JWT_SIGNING_KEY}
       QuantumPlatform__Storage__BasePath: /app/Files
       QuantumPlatform__BootstrapAdmin__Username: ${QUANTUM_PLATFORM_BOOTSTRAP_ADMIN_USERNAME:-}
@@ -24,38 +24,18 @@ services:
     volumes:
       - platform-files:/app/Files
     networks:
-      default:
       sakura:
         aliases:
           - quantum-platform
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  postgres:
-    restart: unless-stopped
-    image: postgres:17-alpine
-    environment:
-      POSTGRES_DB: quantum_platform
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    networks:
-      default:
-        aliases:
-          - quantum-platform-postgres
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d quantum_platform"]
-      interval: 5s
-      timeout: 5s
-      retries: 12
+      database:
 
 volumes:
   platform-files:
-  postgres-data:
 
 networks:
   sakura:
     external: true
     name: agentfn-overlay-net
+  database:
+    external: true
+    name: koala-pp-overlay-net
