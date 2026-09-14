@@ -6,7 +6,7 @@ using Quantum.Platform.Application;
 using Quantum.Platform.Application.Handlers;
 using Quantum.Platform.Authentication;
 using Quantum.Platform.Contract;
-using Quantum.Platform.Components;
+using Quantum.Platform.UI.Components;
 
 var builder = NOFWebApplicationBuilder.Create(args);
 
@@ -27,14 +27,20 @@ builder.Services.AddRazorComponents()
 var app = await builder.BuildAsync();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = static _ => false });
+if (app.Environment.IsDevelopment())
+{
+    app.UseWebAssemblyDebugging();
+}
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
+app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(Quantum.Platform.Client._Imports).Assembly);
+    .AddAdditionalAssemblies(typeof(Routes).Assembly);
 app.MapGet("/api/status", () => Results.Ok(new
 {
     service = "Quantum Platform",
@@ -44,5 +50,3 @@ app.MapGet("/api/status", () => Results.Ok(new
 }));
 
 await app.RunAsync();
-
-public partial class Program;

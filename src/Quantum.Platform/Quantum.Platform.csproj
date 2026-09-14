@@ -4,10 +4,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>quantum-platform</UserSecretsId>
+    <RequiresAspNetWebAssets>true</RequiresAspNetWebAssets>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Quantum.Platform.Application\Quantum.Platform.Application.csproj" />
-    <ProjectReference Include="..\Quantum.Platform.Client\Quantum.Platform.Client.csproj" />
+    <ProjectReference Include="..\Quantum.Platform.UI\Quantum.Platform.UI.csproj" />
     <ProjectReference Include="..\Quantum.Platform.Contract\Quantum.Platform.Contract.csproj" />
     <ProjectReference Include="..\Quantum.Platform.Domain\Quantum.Platform.Domain.csproj" />
   </ItemGroup>

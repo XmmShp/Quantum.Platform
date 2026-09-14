@@ -9,6 +9,7 @@ src/
 ├── Quantum.Platform.Domain/          用户、插件、版本与审计领域模型
 ├── Quantum.Platform.Contract/        强类型 JSON-RPC Contract
 ├── Quantum.Platform.Application/     NOF RpcServer、Handler 与业务策略
+├── Quantum.Platform.UI/              Blazor 页面、组件、交互与前端静态资源
 └── Quantum.Platform/                 Host、JWT、EF Core、密码哈希与文件存储
 tests/
 └── Quantum.Platform.Tests/           领域、版本约束和 ZIP 安全测试
