@@ -20,11 +20,13 @@ fi
 mkdir -p "$runner_root"
 cd "$runner_root"
 
-curl --fail --location --output "$archive" \
-  "https://github.com/actions/runner/releases/download/v${runner_version}/${archive}"
-echo "${runner_sha256}  ${archive}" | sha256sum --check --strict
-tar --extract --gzip --file "$archive"
-rm "$archive"
+if [[ ! -x "$runner_root/config.sh" ]]; then
+  curl --fail --location --output "$archive" \
+    "https://github.com/actions/runner/releases/download/v${runner_version}/${archive}"
+  echo "${runner_sha256}  ${archive}" | sha256sum --check --strict
+  tar --extract --gzip --file "$archive"
+  rm "$archive"
+fi
 
 ./config.sh \
   --unattended \
