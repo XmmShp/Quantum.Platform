@@ -1,5 +1,6 @@
 services:
   platform:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile
@@ -19,14 +20,20 @@ services:
       QuantumPlatform__Email__FromAddress: ${QUANTUM_PLATFORM_EMAIL_FROM:-}
       QuantumPlatform__Email__FromName: ${QUANTUM_PLATFORM_EMAIL_FROM_NAME:-Quantum Platform}
     ports:
-      - "5080:8080"
+      - "127.0.0.1:5080:8080"
     volumes:
       - platform-files:/app/Files
+    networks:
+      default:
+      sakura:
+        aliases:
+          - quantum-platform
     depends_on:
       postgres:
         condition: service_healthy
 
   postgres:
+    restart: unless-stopped
     image: postgres:17-alpine
     environment:
       POSTGRES_DB: quantum_platform
@@ -43,3 +50,8 @@ services:
 volumes:
   platform-files:
   postgres-data:
+
+networks:
+  sakura:
+    external: true
+    name: agentfn-overlay-net

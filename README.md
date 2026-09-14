@@ -110,6 +110,27 @@ dotnet build Quantum.Platform.slnx
 dotnet test tests/Quantum.Platform.Tests/Quantum.Platform.Tests.csproj
 ```
 
+## 生产部署
+
+生产环境部署到 `192.168.50.202`，对外地址为 `https://quantum.io-vii.com`。只有推送到 `main`
+分支才会触发 `.github/workflows/deploy-production.yml`；Pull Request 的构建测试继续使用 GitHub 托管
+Runner，不会接触生产主机。
+
+生产 Runner 必须注册在本仓库，使用标签 `quantum-platform-prod`。目标机使用 `koala` 用户运行 Runner，
+并通过用户级 systemd 服务保持在线。取得一小时内有效的仓库 Runner 注册令牌后，在目标机执行：
+
+```bash
+export RUNNER_TOKEN='<repository runner registration token>'
+bash scripts/install-production-runner.sh
+unset RUNNER_TOKEN
+```
+
+部署密钥不存入仓库或 GitHub Actions。目标机必须存在权限为 `600` 的
+`~/.config/quantum-platform/production.env`，至少包含 `POSTGRES_PASSWORD` 和
+`QUANTUM_PLATFORM_JWT_SIGNING_KEY`。Compose 仅把宿主健康检查端口绑定到
+`127.0.0.1:5080`，并把应用接入既有的 `agentfn-overlay-net`；SakuraFRP HTTPS 隧道应转发到
+该网络中的 `quantum-platform:8080`。
+
 ## 许可证
 
 项目采用 MIT 许可证，详见 [LICENSE](LICENSE)。
