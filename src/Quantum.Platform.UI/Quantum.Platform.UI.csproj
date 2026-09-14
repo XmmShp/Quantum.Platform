@@ -8,7 +8,7 @@
     <EnableSingleFileAnalyzer>true</EnableSingleFileAnalyzer>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <IsPackable>false</IsPackable>
-    <NoWarn>$(NoWarn);IL2111</NoWarn>
+    <NoWarn>$(NoWarn);IL2111;IL2026;IL3050</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <SupportedPlatform Include="browser" />
