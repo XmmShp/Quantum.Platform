@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text;
+using System.Text.Json;
 using Microsoft.Extensions.Options;
 using Quantum.Platform.Application;
 using Quantum.Platform.Domain;
@@ -25,6 +26,23 @@ public sealed class HostServicesTests : IDisposable
         Assert.True(hasher.Verify(hash, "correct horse battery staple"));
         Assert.False(hasher.Verify(hash, "incorrect password"));
     }
+
+    [Fact]
+    public void CredentialClientKeyPair_SeparatesPublicAndPrivateMaterial()
+    {
+        var keySet = CredentialClientKeyPairGenerator.Generate();
+        using var publicDocument = JsonDocument.Parse(keySet.JsonWebKeySet);
+        using var privateDocument = JsonDocument.Parse(keySet.PrivateJsonWebKeySet);
+        var publicKey = publicDocument.RootElement.GetProperty("keys")[0];
+        var privateKey = privateDocument.RootElement.GetProperty("keys")[0];
+
+        Assert.Equal("RSA", publicKey.GetProperty("kty").GetString());
+        Assert.Equal(publicKey.GetProperty("kid").GetString(), privateKey.GetProperty("kid").GetString());
+        Assert.False(publicKey.TryGetProperty("d", out _));
+        Assert.True(privateKey.TryGetProperty("d", out _));
+        Assert.Equal("[REDACTED]", keySet.ToString());
+    }
+
 
     [Fact]
     public async Task DevelopmentReviewer_ApprovesWithoutCallingAgentFn()

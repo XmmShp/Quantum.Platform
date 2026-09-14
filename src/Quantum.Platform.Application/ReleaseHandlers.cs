@@ -66,7 +66,10 @@ public sealed class UploadPluginRelease(
         Context context,
         CancellationToken cancellationToken)
     {
-        var caller = await callerResolver.RequireAsync(PlatformUserRole.Developer | PlatformUserRole.Admin, cancellationToken);
+        var caller = await callerResolver.RequireAsync(
+            PlatformUserRole.Developer | PlatformUserRole.Admin,
+            cancellationToken,
+            QuantumPlatformPermissions.PluginPublish);
         if (caller.User is not { } user)
         {
             return Result.Fail(caller.ErrorCode!, caller.ErrorMessage!);
@@ -89,6 +92,11 @@ public sealed class UploadPluginRelease(
         if (listing is null || !HandlerSupport.CanManage(listing, user))
         {
             return Result.Fail("plugin_not_found", "The plugin was not found.");
+        }
+
+        if (callerResolver.IsCredentialClient && !callerResolver.CanPublishPlugin(listing.PluginId))
+        {
+            return Result.Fail("credential_client_plugin_forbidden", "The Credential Client is not allowed to publish this plugin.");
         }
 
         if (await releases.AsNoTracking().AnyAsync(

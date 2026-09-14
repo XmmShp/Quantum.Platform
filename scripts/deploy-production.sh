@@ -48,6 +48,7 @@ set +a
 
 : "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}"
 : "${QUANTUM_PLATFORM_JWT_SIGNING_KEY:?QUANTUM_PLATFORM_JWT_SIGNING_KEY is required}"
+: "${QUANTUM_PLATFORM_OIDC_SIGNING_KEY_ENCRYPTION_KEY:?QUANTUM_PLATFORM_OIDC_SIGNING_KEY_ENCRYPTION_KEY is required}"
 
 QUANTUM_PLATFORM_STORAGE_NODE="$(docker info --format '{{.Name}}')"
 export QUANTUM_PLATFORM_STORAGE_NODE
@@ -68,6 +69,7 @@ jq -n '
     },
     QuantumPlatform: {
       Jwt: { SigningKey: env.QUANTUM_PLATFORM_JWT_SIGNING_KEY },
+      OidcServer: { SigningKeyEncryptionKey: env.QUANTUM_PLATFORM_OIDC_SIGNING_KEY_ENCRYPTION_KEY },
       Storage: { BasePath: "/app/Files" },
       AutomatedReview: {
         Enabled: true,

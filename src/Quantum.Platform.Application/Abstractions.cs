@@ -5,7 +5,34 @@ namespace Quantum.Platform.Application;
 public interface IPlatformCallerContext
 {
     string? UserId { get; }
+    string? CredentialClientId { get; }
+    bool HasPermission(string permission);
 }
+
+public interface ICredentialClientProtocolRepository
+{
+    Task<IReadOnlyList<CredentialClientProtocolDescriptor>> ListAsync(CancellationToken cancellationToken = default);
+    Task<NOF.Contract.Result<CredentialClientProtocolDescriptor>> CreateAsync(
+        CreateCredentialClientProtocolRequest request,
+        CancellationToken cancellationToken = default);
+    Task<NOF.Contract.Result> DeleteAsync(string clientId, CancellationToken cancellationToken = default);
+}
+
+public sealed record CredentialClientProtocolDescriptor(
+    string ClientId,
+    string DisplayName,
+    string OwnerUserId,
+    IReadOnlyList<string> AllowedPluginIds,
+    bool IsEnabled,
+    DateTime CreatedAtUtc,
+    DateTime UpdatedAtUtc);
+
+public sealed record CreateCredentialClientProtocolRequest(
+    string ClientId,
+    string DisplayName,
+    string OwnerUserId,
+    IReadOnlyList<string> AllowedPluginIds,
+    string JsonWebKeySet);
 
 public interface IPlatformPasswordHasher
 {

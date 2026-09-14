@@ -1,5 +1,17 @@
 namespace Quantum.Platform.Contract;
 
+public sealed record CreateCredentialClientRequest
+{
+    public required string ClientId { get; init; }
+    public required string DisplayName { get; init; }
+    public string[] AllowedPluginIds { get; init; } = [];
+}
+
+public sealed record DeleteCredentialClientRequest
+{
+    public required string ClientId { get; init; }
+}
+
 public sealed record EmptyRequest;
 
 public sealed record RegisterUserRequest

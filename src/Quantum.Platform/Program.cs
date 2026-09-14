@@ -7,6 +7,7 @@ using Quantum.Platform.Application.Handlers;
 using Quantum.Platform.Authentication;
 using Quantum.Platform.Contract;
 using Quantum.Platform.UI.Components;
+using Quantum.Platform.SkillDistribution;
 
 var builder = NOFWebApplicationBuilder.Create(args);
 var emailConfigurationPath = builder.Configuration["QuantumPlatform:Email:ConfigurationPath"];
@@ -40,6 +41,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
 app.MapStaticAssets();
+app.MapQuantumPublishSkill();
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()
     .AddAdditionalAssemblies(typeof(Routes).Assembly);

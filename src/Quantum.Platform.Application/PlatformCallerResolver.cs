@@ -8,10 +8,22 @@ public sealed class PlatformCallerResolver(
     IPlatformCallerContext callerContext,
     IRepository<PlatformUser> users)
 {
+    public bool IsCredentialClient => callerContext.CredentialClientId is not null;
+
+    public bool CanPublishPlugin(string pluginId)
+        => callerContext.HasPermission($"{QuantumPlatformPermissions.PluginPrefix}{pluginId}");
+
     public async Task<PlatformCallerResolution> RequireAsync(
         PlatformUserRole requiredRoles,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? credentialPermission = null)
     {
+        if (callerContext.CredentialClientId is not null &&
+            (credentialPermission is null || !callerContext.HasPermission(credentialPermission)))
+        {
+            return PlatformCallerResolution.Fail("credential_client_forbidden", "The Credential Client does not have the required permission.");
+        }
+
         if (TryParseId(callerContext.UserId) is not { } userId)
         {
             return PlatformCallerResolution.Fail("authentication_required", "A valid bearer token is required.");

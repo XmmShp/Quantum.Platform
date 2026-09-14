@@ -1,6 +1,6 @@
 using Quantum.Platform.Application;
-using Microsoft.Extensions.Options;
 using System.Net.Mail;
+using Quantum.Platform.SkillDistribution;
 
 namespace Quantum.Platform;
 
@@ -11,6 +11,7 @@ public static class QuantumPlatformServiceCollectionExtensions
         IConfiguration configuration,
         IHostEnvironment environment)
     {
+        services.AddSingleton<QuantumPublishSkillPackageCache>();
         services.Configure<PluginStorageOptions>(
             configuration.GetSection(PluginStorageOptions.SectionName));
         services.AddOptions<AgentFnAutomatedReviewOptions>()

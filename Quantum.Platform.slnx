@@ -11,6 +11,7 @@
   <Project Path="src/Quantum.Platform.Contract/Quantum.Platform.Contract.csproj" />
   <Project Path="src/Quantum.Platform.Application/Quantum.Platform.Application.csproj" />
   <Project Path="src/Quantum.Platform.UI/Quantum.Platform.UI.csproj" />
+  <Project Path="src/Quantum.Platform.Cli/Quantum.Platform.Cli.csproj" />
   <Project Path="src/Quantum.Platform/Quantum.Platform.csproj" />
   <Project Path="tests/Quantum.Platform.Tests/Quantum.Platform.Tests.csproj" />
 </Solution>

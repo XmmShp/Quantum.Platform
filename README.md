@@ -101,7 +101,7 @@ Content-Type: application/json; charset=utf-8
 docker build -t quantum-platform .
 ```
 
-也可以在本目录准备 `POSTGRES_PASSWORD` 和 `QUANTUM_PLATFORM_JWT_SIGNING_KEY` 后运行：
+也可以在本目录准备 `POSTGRES_PASSWORD`、`QUANTUM_PLATFORM_JWT_SIGNING_KEY` 和独立的 `QUANTUM_PLATFORM_OIDC_SIGNING_KEY_ENCRYPTION_KEY` 后运行：
 
 ```bash
 docker compose up --build
@@ -157,9 +157,25 @@ unset RUNNER_TOKEN
 
 部署密钥不存入仓库或 GitHub Actions。目标机必须存在以下权限为 `600` 的文件：
 
-- `~/.config/quantum-platform/production.env`：仅包含 `POSTGRES_PASSWORD` 和 `QUANTUM_PLATFORM_JWT_SIGNING_KEY`。
+- `~/.config/quantum-platform/production.env`：包含 `POSTGRES_PASSWORD`、`QUANTUM_PLATFORM_JWT_SIGNING_KEY` 和 `QUANTUM_PLATFORM_OIDC_SIGNING_KEY_ENCRYPTION_KEY`。
 - `~/.config/quantum-platform/quantum-platform-email.json`：从 notification-service 邮件配置派生的 JSON Secret。
 - `~/.config/quantum-platform/quantum-platform-review.private.jwks.json`：AgentFn Credential Client 私有 JWKS。
+
+## 插件 CI 发布
+
+平台通过 OAuth 2.0 Client Credentials 与 `private_key_jwt` 支持无人值守发布。开发者先创建一个仅绑定所属插件的 Credential Client，并把只返回一次的私有 JWKS 存入 CI secret；平台只保存公开 JWKS。CI 使用短期 `plugin:publish` 令牌提交版本，后续仍进入自动审核流程。
+
+```sh
+dotnet tool install --global Quantum.Platform.Cli
+export QUANTUM_CLIENT_ID=example-ci
+export QUANTUM_CLIENT_PRIVATE_JWKS="$(<private.jwks.json)"
+quantum-cli plugins publish ./dist/plugin \
+  --quantum-version-support ">=0.1.0" \
+  --release-notes "CI release" \
+  --output subprocess
+```
+
+配套 Codex SKILL 发布在 `/skills/publish-quantum-plugin/manifest.json`。CLI 的 NuGet 包由 `cli-v*` tag 触发发布，使用 NuGet Trusted Publishing 从 GitHub OIDC 换取临时密钥；仓库只需配置 `NUGET_USER` variable，并在 NuGet.org 一次性建立匹配仓库、workflow 与 `nuget-production` environment 的 Trusted Publishing policy。
 
 `POSTGRES_PASSWORD` 对应既有 `koala-pp-postgresql`
 实例中的独立 `quantum_platform` 用户和同名数据库。Compose 仅把宿主健康检查端口绑定到

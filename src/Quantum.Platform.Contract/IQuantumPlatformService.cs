@@ -18,6 +18,18 @@ public interface IQuantumPlatformService : IRpcService
     [Category("Users")]
     Result<LoginResponse> Login(LoginRequest request);
 
+    [Summary("Create a private-key Credential Client for unattended CI publishing")]
+    [Category("Credential Clients")]
+    Result<CreateCredentialClientResponse> CreateCredentialClient(CreateCredentialClientRequest request);
+
+    [Summary("List Credential Clients owned by the authenticated user")]
+    [Category("Credential Clients")]
+    Result<CredentialClientSummary[]> ListCredentialClients(EmptyRequest request);
+
+    [Summary("Delete an owned Credential Client")]
+    [Category("Credential Clients")]
+    Result DeleteCredentialClient(DeleteCredentialClientRequest request);
+
     [Summary("Get the authenticated user's profile")]
     [Category("Users")]
     Result<UserSummary> GetCurrentUser(EmptyRequest request);

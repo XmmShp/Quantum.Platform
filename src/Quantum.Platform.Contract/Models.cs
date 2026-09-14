@@ -44,6 +44,30 @@ public sealed record LoginResponse
     public required UserSummary User { get; init; }
 }
 
+public sealed record CredentialClientSummary
+{
+    public required string ClientId { get; init; }
+    public required string DisplayName { get; init; }
+    public required string[] AllowedPluginIds { get; init; }
+    public required bool IsEnabled { get; init; }
+    public required DateTime CreatedAtUtc { get; init; }
+    public required DateTime UpdatedAtUtc { get; init; }
+}
+
+public sealed record CredentialClientGeneratedKeySet
+{
+    public required string PrivateJsonWebKeySet { get; init; }
+    public required string JsonWebKeySet { get; init; }
+
+    public override string ToString() => "[REDACTED]";
+}
+
+public sealed record CreateCredentialClientResponse
+{
+    public required CredentialClientSummary Client { get; init; }
+    public required CredentialClientGeneratedKeySet GeneratedKeySet { get; init; }
+}
+
 public sealed record PluginSummary
 {
     public required string ListingId { get; init; }
