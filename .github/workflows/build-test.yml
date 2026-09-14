@@ -25,4 +25,4 @@ jobs:
       - name: Build
         run: dotnet build Quantum.Platform.slnx -c ${{ env.CONFIGURATION }} --no-restore --verbosity quiet
       - name: Test
-        run: dotnet test tests/Quantum.Platform.Tests/Quantum.Platform.Tests.csproj -c ${{ env.CONFIGURATION }} --no-build --verbosity quiet --no-ansi
+        run: dotnet test tests/Quantum.Platform.Tests/Quantum.Platform.Tests.csproj -c ${{ env.CONFIGURATION }} --no-build --verbosity quiet
