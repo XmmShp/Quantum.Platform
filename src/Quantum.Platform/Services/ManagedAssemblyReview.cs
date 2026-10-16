@@ -23,8 +23,12 @@ public static class ManagedAssemblyReview
             !cor.Flags.HasFlag(CorFlags.ILOnly) || cor.ManagedNativeHeaderDirectory.Size != 0)
             throw new BadImageFormatException("Mixed or native code requires manual inspection.");
         using var module = new PEFile(name, new MemoryStream(bytes, writable: false));
-        var decompiler = new CSharpDecompiler(module,
-            new UniversalAssemblyResolver(null, false, ".NETCoreApp,Version=v10.0"),
+        var resolver = new UniversalAssemblyResolver(null, false, ".NETCoreApp,Version=v10.0");
+        // Resolve only from trusted Host/framework locations, never a plugin path or network.
+        resolver.AddSearchDirectory(AppContext.BaseDirectory);
+        foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies().Where(assembly => !assembly.IsDynamic))
+            if (!string.IsNullOrEmpty(assembly.Location)) resolver.AddSearchDirectory(Path.GetDirectoryName(assembly.Location)!);
+        var decompiler = new CSharpDecompiler(module, resolver,
             new DecompilerSettings { ThrowOnAssemblyResolveErrors = false })
         {
             CancellationToken = cancellationToken
